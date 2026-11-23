@@ -18,18 +18,27 @@ class AboutScreen extends StatelessWidget {
             Center(
               child: Column(
                 children: [
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryLightGreen,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppTheme.primaryGreen, width: 2),
-                    ),
-                    child: const Icon(
-                      Icons.eco_rounded,
-                      size: 48,
-                      color: AppTheme.primaryGreen,
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Image.asset(
+                      'assets/icon/app_icon.png',
+                      width: 84,
+                      height: 84,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        width: 84,
+                        height: 84,
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryLightGreen,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: AppTheme.primaryGreen, width: 2),
+                        ),
+                        child: const Icon(
+                          Icons.eco_rounded,
+                          size: 48,
+                          color: AppTheme.primaryGreen,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),

@@ -424,9 +424,11 @@ class _ResultScreenState extends State<ResultScreen> {
                         children: [
                           const Icon(Icons.access_time, size: 14, color: AppTheme.textMuted),
                           const SizedBox(width: 6),
-                          Text(
-                            'Diperiksa pada ${DateFormat('d MMMM yyyy, HH:mm', 'id_ID').format(widget.existingRecord!.createdAt)}',
-                            style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                          Expanded(
+                            child: Text(
+                              'Diperiksa pada ${DateFormat('d MMMM yyyy, HH:mm', 'id_ID').format(widget.existingRecord!.createdAt)}',
+                              style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                            ),
                           ),
                         ],
                       ),
@@ -445,15 +447,17 @@ class _ResultScreenState extends State<ResultScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      children: const [
-                        Icon(Icons.menu_book_rounded, color: AppTheme.primaryGreen),
-                        SizedBox(width: 8),
-                        Text(
-                          'Panduan & Rekomendasi Penanganan',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.textDark,
+                      children: [
+                        const Icon(Icons.menu_book_rounded, color: AppTheme.primaryGreen),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'Panduan & Rekomendasi Penanganan',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.textDark,
+                            ),
                           ),
                         ),
                       ],
@@ -583,12 +587,14 @@ class _ResultScreenState extends State<ResultScreen> {
         children: [
           Icon(icon, size: 16, color: AppTheme.primaryGreen),
           const SizedBox(width: 6),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 13.5,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.primaryDarkGreen,
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontSize: 13.5,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.primaryDarkGreen,
+              ),
             ),
           ),
         ],

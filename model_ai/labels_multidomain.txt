@@ -1,0 +1,5 @@
+Bacterial_Leaf_Blight
+Brown_Spot
+Healthy
+Leaf_Blast
+Tungro

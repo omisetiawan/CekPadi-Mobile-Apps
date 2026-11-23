@@ -108,9 +108,11 @@ class AboutScreen extends StatelessWidget {
                       children: [
                         Icon(Icons.shield_outlined, color: AppTheme.warningOrange, size: 20),
                         SizedBox(width: 8),
-                        Text(
-                          'Pernyataan Penyangkalan (Disclaimer)',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark),
+                        Expanded(
+                          child: Text(
+                            'Pernyataan Penyangkalan (Disclaimer)',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark),
+                          ),
                         ),
                       ],
                     ),
@@ -145,9 +147,11 @@ class AboutScreen extends StatelessWidget {
               children: [
                 Icon(icon, size: 18, color: AppTheme.primaryGreen),
                 const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5, color: AppTheme.textDark),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5, color: AppTheme.textDark),
+                  ),
                 ),
               ],
             ),

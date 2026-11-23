@@ -6,6 +6,14 @@ import 'package:cek_padi/theme/app_theme.dart';
 
 void main() {
   testWidgets('EncyclopediaScreen menampilkan katalog 5 kelas daun padi', (WidgetTester tester) async {
+    // Set ukuran layar testing agar menyerupai layar HP modern
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.lightTheme,
@@ -26,6 +34,13 @@ void main() {
   });
 
   testWidgets('AboutScreen menampilkan informasi skripsi dan spesifikasi AI', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.lightTheme,

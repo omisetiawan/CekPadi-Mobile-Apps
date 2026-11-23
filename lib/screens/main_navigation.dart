@@ -26,65 +26,154 @@ class _MainNavigationState extends State<MainNavigation> {
     });
   }
 
-  /// Membuka modal pilihan kamera / galeri
+  /// Membuka modal pilihan kamera / galeri dengan gaya Anti-slop
   void _showScanOptions() {
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) => SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Drag Handle
               Container(
-                width: 40,
+                width: 44,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: AppTheme.borderMuted,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
               const SizedBox(height: 16),
               const Text(
                 'Pilih Metode Pemeriksaan',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
+                ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               const Text(
                 'Foto akan dipotong otomatis rasio 1:1 sebelum dipindai',
-                style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
               ),
-              const SizedBox(height: 20),
-              ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: AppTheme.primaryLightGreen,
-                  child: const Icon(Icons.camera_alt, color: AppTheme.primaryGreen),
+              const SizedBox(height: 18),
+
+              // Opsi 1: Kamera Langsung
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _processScan(ImageSource.camera);
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppTheme.borderMuted),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.camera_alt, color: AppTheme.primaryGreen, size: 22),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: const [
+                              Text(
+                                'Kamera Langsung',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14.5,
+                                  color: AppTheme.textPrimary,
+                                ),
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                'Ambil foto helai daun di lapangan',
+                                style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.chevron_right, color: AppTheme.textSecondary),
+                      ],
+                    ),
+                  ),
                 ),
-                title: const Text('Kamera Langsung', style: TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: const Text('Ambil foto helai daun di lapangan'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _processScan(ImageSource.camera);
-                },
               ),
-              const Divider(),
-              ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: const Color(0xFFFFF8E1),
-                  child: const Icon(Icons.photo_library, color: AppTheme.accentAmber),
+              const SizedBox(height: 10),
+
+              // Opsi 2: Galeri Foto
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _processScan(ImageSource.gallery);
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppTheme.borderMuted),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEF3C7),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.photo_library, color: AppTheme.accentAmber, size: 22),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: const [
+                              Text(
+                                'Galeri Foto',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14.5,
+                                  color: AppTheme.textPrimary,
+                                ),
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                'Pilih foto yang tersimpan di galeri HP',
+                                style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.chevron_right, color: AppTheme.textSecondary),
+                      ],
+                    ),
+                  ),
                 ),
-                title: const Text('Galeri Foto', style: TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: const Text('Pilih foto yang tersimpan di galeri'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _processScan(ImageSource.gallery);
-                },
               ),
+              const SizedBox(height: 8),
             ],
           ),
         ),
@@ -112,7 +201,10 @@ class _MainNavigationState extends State<MainNavigation> {
               children: [
                 CircularProgressIndicator(color: AppTheme.primaryGreen),
                 SizedBox(height: 16),
-                Text('Mendiagnosis...', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(
+                  'Mendiagnosis...',
+                  style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+                ),
               ],
             ),
           ),
@@ -127,7 +219,7 @@ class _MainNavigationState extends State<MainNavigation> {
       final savedPath = await ImageStorageService.saveImage(croppedFile);
 
       if (mounted) {
-        Navigator.pop(context); // Tutup dialog
+        Navigator.pop(context); // Tutup dialog loading
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -143,7 +235,10 @@ class _MainNavigationState extends State<MainNavigation> {
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Terjadi kesalahan: $e')),
+          SnackBar(
+            content: Text('Terjadi kesalahan: $e'),
+            backgroundColor: AppTheme.statusDisease,
+          ),
         );
       }
     }
@@ -167,7 +262,7 @@ class _MainNavigationState extends State<MainNavigation> {
         onPressed: _showScanOptions,
         backgroundColor: AppTheme.primaryGreen,
         foregroundColor: Colors.white,
-        elevation: 3,
+        elevation: 2,
         shape: const CircleBorder(),
         tooltip: 'Pindai Daun Padi',
         child: const Icon(Icons.qr_code_scanner_rounded, size: 28),

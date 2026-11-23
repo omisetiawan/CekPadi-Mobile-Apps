@@ -27,11 +27,18 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    // Berlangganan ke sinyal perubahan database agar tampilan selalu update otomatis
+    DatabaseHelper.historyChangeNotifier.addListener(_loadDashboardData);
     _loadDashboardData();
   }
 
+  @override
+  void dispose() {
+    DatabaseHelper.historyChangeNotifier.removeListener(_loadDashboardData);
+    super.dispose();
+  }
+
   Future<void> _loadDashboardData() async {
-    setState(() => _isLoading = true);
     final count = await DatabaseHelper.instance.getRecordCount();
     final recents = await DatabaseHelper.instance.getRecentRecords(limit: 3);
 
@@ -44,7 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  /// Proses Deteksi: Ambil Foto -> Crop 1:1 -> AI TFLite -> Simpan -> Buka Hasil
+  /// Alur Deteksi: Ambil Foto -> Crop 1:1 -> AI On-Device -> Simpan -> Buka Hasil
   Future<void> _startDetection(ImageSource source) async {
     final File? croppedFile = await ImageHelper.pickAndCropImage(
       context: context,
@@ -53,27 +60,31 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (croppedFile == null || !mounted) return;
 
-    // Tampilkan Dialog Loading Inferensi
+    // Tampilkan Dialog Loading Fungsional
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => const Center(
         child: Card(
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+            padding: EdgeInsets.symmetric(horizontal: 28, vertical: 24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 CircularProgressIndicator(color: AppTheme.primaryGreen),
                 SizedBox(height: 16),
                 Text(
-                  'Menganalisis Daun Padi...',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                  'Menganalisis Daun...',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                    color: AppTheme.textPrimary,
+                  ),
                 ),
-                SizedBox(height: 6),
+                SizedBox(height: 4),
                 Text(
-                  'Menggunakan AI On-Device',
-                  style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                  'Memproses citra di perangkat',
+                  style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
                 ),
               ],
             ),
@@ -86,14 +97,12 @@ class _HomeScreenState extends State<HomeScreen> {
       final classifier = ClassifierService();
       await classifier.initialize();
       final result = await classifier.classifyImage(croppedFile);
-
-      // Simpan ke direktori dokumen lokal HP
       final savedImagePath = await ImageStorageService.saveImage(croppedFile);
 
       if (mounted) {
-        Navigator.pop(context); // Tutup loading dialog
+        Navigator.pop(context); // Tutup dialog loading
 
-        final bool? needRefresh = await Navigator.push<bool>(
+        await Navigator.push<bool>(
           context,
           MaterialPageRoute(
             builder: (_) => ResultScreen(
@@ -103,18 +112,14 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         );
-
-        if (needRefresh == true || mounted) {
-          _loadDashboardData();
-        }
       }
     } catch (e) {
       if (mounted) {
-        Navigator.pop(context); // Tutup dialog
+        Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal menjalankan inferensi: $e'),
-            backgroundColor: AppTheme.dangerRed,
+            content: Text('Gagal menganalisis citra: $e'),
+            backgroundColor: AppTheme.statusDisease,
           ),
         );
       }
@@ -125,19 +130,31 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.eco, color: AppTheme.primaryGreen),
-            SizedBox(width: 8),
-            Text('CekPadi', style: TextStyle(fontWeight: FontWeight.bold)),
-          ],
-        ),
+        title: const Text('CekPadi'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Segarkan data',
-            onPressed: _loadDashboardData,
+          Container(
+            margin: const EdgeInsets.only(right: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryContainer,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: AppTheme.primaryGreen.withValues(alpha: 0.2)),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.offline_pin_outlined, size: 14, color: AppTheme.primaryGreen),
+                SizedBox(width: 4),
+                Text(
+                  'Mode Lapangan',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.primaryGreen,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -150,264 +167,157 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. Sambutan & Banner Selamat Datang
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppTheme.primaryDarkGreen, AppTheme.primaryGreen],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.primaryGreen.withValues(alpha: 0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.offline_bolt, color: Colors.white, size: 14),
-                              SizedBox(width: 4),
-                              Text(
-                                '100% Offline AI',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          'Total Scan: $_totalHistory',
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Deteksi Cepat Penyakit\nDaun Tanaman Padi',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        height: 1.3,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Dapatkan hasil diagnosis akurat dan rekomendasi penanganan instan langsung di sawah tanpa kuota internet.',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12.5,
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // 2. Tombol Aksi Utama (Kamera & Galeri)
-              const Text(
-                'Mulai Pemeriksaan Daun',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.textDark,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  // Tombol Kamera
-                  Expanded(
-                    child: Material(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(16),
-                        onTap: () => _startDetection(ImageSource.camera),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppTheme.primaryGreen.withValues(alpha: 0.3)),
-                          ),
-                          child: Column(
-                            children: [
-                              CircleAvatar(
-                                radius: 28,
-                                backgroundColor: AppTheme.primaryLightGreen,
-                                child: const Icon(
-                                  Icons.camera_alt_rounded,
-                                  size: 30,
-                                  color: AppTheme.primaryGreen,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              const Text(
-                                'Ambil Foto',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.textDark,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              const Text(
-                                'Gunakan Kamera HP',
-                                style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-
-                  // Tombol Galeri
-                  Expanded(
-                    child: Material(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(16),
-                        onTap: () => _startDetection(ImageSource.gallery),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.grey.shade300),
-                          ),
-                          child: Column(
-                            children: [
-                              CircleAvatar(
-                                radius: 28,
-                                backgroundColor: const Color(0xFFFFF8E1),
-                                child: const Icon(
-                                  Icons.photo_library_rounded,
-                                  size: 30,
-                                  color: AppTheme.accentAmber,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              const Text(
-                                'Pilih Galeri',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.textDark,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              const Text(
-                                'Ambil dari Album',
-                                style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // 3. Tips Pengambilan Foto Akurat (PRD F1)
+              // 1. Kartu Aksi Utama Pemeriksaan (Desain Khusus Lapangan)
               Card(
-                color: const Color(0xFFF1F8E9),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(color: AppTheme.primaryGreen.withValues(alpha: 0.3)),
+                child: Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Pemeriksaan Gejala Daun',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Arahkan kamera ke helai daun yang berbercak untuk mendiagnosis penyakit dan panduan penanganannya.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          height: 1.4,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Tombol Kamera Utama (Besar, Mudah ditekan di sawah)
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 56),
+                        ),
+                        icon: const Icon(Icons.camera_alt_rounded, size: 24),
+                        label: const Text('Foto Daun Padi (Kamera)'),
+                        onPressed: () => _startDetection(ImageSource.camera),
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Tombol Galeri Sekunder
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.photo_library_outlined, size: 20, color: AppTheme.textSecondary),
+                        label: const Text('Pilih dari Galeri Foto'),
+                        onPressed: () => _startDetection(ImageSource.gallery),
+                      ),
+                    ],
+                  ),
                 ),
+              ),
+              const SizedBox(height: 18),
+
+              // 2. Petunjuk Pemotretan Lapangan
+              Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: const [
-                          Icon(Icons.lightbulb_outline, color: AppTheme.primaryDarkGreen, size: 20),
+                      const Row(
+                        children: [
+                          Icon(Icons.crop_free, size: 18, color: AppTheme.primaryGreen),
                           SizedBox(width: 8),
                           Text(
-                            'Tips Pemindaian Akurat',
+                            'Panduan Mengambil Foto',
                             style: TextStyle(
                               fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.primaryDarkGreen,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.textPrimary,
                             ),
                           ),
                         ],
                       ),
+                      const SizedBox(height: 12),
+                      _buildGuideRow(
+                        number: '1',
+                        title: 'Satu helai daun bergejala',
+                        desc: 'Posisikan bingkai kotak (1:1) tepat pada bercak daun utama.',
+                      ),
                       const SizedBox(height: 10),
-                      _buildTipItem('Fokuskan bingkai crop (1:1) tepat pada 1 helai daun yang bergejala.'),
-                      _buildTipItem('Pastikan pencahayaan terang dan foto tidak goyang/buram.'),
-                      _buildTipItem('Hindari mengambil terlalu banyak daun sekaligus dalam satu bingkai.'),
+                      _buildGuideRow(
+                        number: '2',
+                        title: 'Jarak 10 sampai 15 cm',
+                        desc: 'Dekatkan kamera agar detail warna dan tekstur bercak tajam.',
+                      ),
+                      const SizedBox(height: 10),
+                      _buildGuideRow(
+                        number: '3',
+                        title: 'Pencahayaan terang alami',
+                        desc: 'Hindari bayangan gelap tangan atau foto daun yang bergoyang.',
+                      ),
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: 20),
 
-              // 4. Riwayat Terakhir (3 Catatan Terakhir)
+              // 3. Riwayat Terakhir
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Riwayat Terakhir',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.textDark,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Pemeriksaan Terakhir',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        'Total tersimpan: $_totalHistory catatan',
+                        style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                      ),
+                    ],
+                  ),
+                  if (_totalHistory > 0)
+                    TextButton(
+                      onPressed: () => widget.onNavigateTab(1),
+                      child: const Text('Buka Riwayat'),
                     ),
-                  ),
-                  TextButton(
-                    onPressed: () => widget.onNavigateTab(1), // Pindah ke Tab Riwayat
-                    child: const Text('Lihat Semua'),
-                  ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
 
               if (_isLoading)
-                const Center(child: CircularProgressIndicator())
+                const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Center(child: CircularProgressIndicator(color: AppTheme.primaryGreen)),
+                )
               else if (_recentRecords.isEmpty)
                 Card(
                   child: Padding(
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
                     child: Center(
                       child: Column(
-                        children: [
-                          Icon(Icons.history, size: 40, color: Colors.grey.shade400),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Belum ada riwayat pemeriksaan',
-                            style: TextStyle(fontSize: 13, color: AppTheme.textMuted),
+                        children: const [
+                          Icon(Icons.inventory_2_outlined, size: 36, color: AppTheme.textSecondary),
+                          SizedBox(height: 8),
+                          Text(
+                            'Belum ada catatan pemeriksaan',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.textPrimary,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Hasil pemeriksaan daun yang kamu lakukan akan tersimpan otomatis di sini.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
                           ),
                         ],
                       ),
@@ -419,13 +329,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: _recentRecords.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 8),
+                  separatorBuilder: (context, index) => const SizedBox(height: 10),
                   itemBuilder: (context, index) {
                     final record = _recentRecords[index];
-                    return _buildHistoryItem(record);
+                    return _buildRecordTile(record);
                   },
                 ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
             ],
           ),
         ),
@@ -433,85 +343,75 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildTipItem(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('• ', style: TextStyle(color: AppTheme.primaryGreen, fontWeight: FontWeight.bold)),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(fontSize: 12.5, height: 1.35, color: AppTheme.textDark),
+  Widget _buildGuideRow({
+    required String number,
+    required String title,
+    required String desc,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 22,
+          height: 22,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: AppTheme.primaryContainer,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text(
+            number,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.primaryGreen,
             ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 1),
+              Text(
+                desc,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppTheme.textSecondary,
+                  height: 1.3,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildHistoryItem(DetectionRecord record) {
+  Widget _buildRecordTile(DetectionRecord record) {
     final bool isHealthy = record.labelKey == 'Healthy';
-    final Color badgeColor = record.isLowConfidence
-        ? AppTheme.warningOrange
-        : (isHealthy ? AppTheme.primaryGreen : AppTheme.dangerRed);
+    final Color statusColor = record.isLowConfidence
+        ? AppTheme.statusWarning
+        : (isHealthy ? AppTheme.statusHealthy : AppTheme.statusDisease);
+
+    final String statusLabel = record.isLowConfidence
+        ? 'Perlu Foto Ulang'
+        : (isHealthy ? 'Kondisi Sehat' : 'Terindikasi');
 
     return Card(
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        leading: ClipRRect(
-          borderRadius: BorderRadius.circular(10),
-          child: SizedBox(
-            width: 50,
-            height: 50,
-            child: Image.file(
-              File(record.imagePath),
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                color: Colors.grey.shade200,
-                child: const Icon(Icons.broken_image, size: 24, color: Colors.grey),
-              ),
-            ),
-          ),
-        ),
-        title: Text(
-          record.diseaseName,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 2),
-            Text(
-              DateFormat('d MMM yyyy, HH:mm', 'id_ID').format(record.createdAt),
-              style: const TextStyle(fontSize: 11, color: AppTheme.textMuted),
-            ),
-          ],
-        ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              '${record.confidence.toStringAsFixed(1)}%',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-                color: badgeColor,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              record.isLowConfidence
-                  ? 'Keyakinan Rendah'
-                  : (isHealthy ? 'Sehat' : 'Penyakit'),
-              style: TextStyle(fontSize: 10, color: badgeColor, fontWeight: FontWeight.w600),
-            ),
-          ],
-        ),
-        onTap: () async {
-          final res = await Navigator.push<bool>(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () {
+          Navigator.push(
             context,
             MaterialPageRoute(
               builder: (_) => ResultScreen(
@@ -520,10 +420,82 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           );
-          if (res == true && mounted) {
-            _loadDashboardData();
-          }
         },
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: SizedBox(
+                  width: 58,
+                  height: 58,
+                  child: Image.file(
+                    File(record.imagePath),
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      color: AppTheme.primaryContainer,
+                      child: const Icon(Icons.broken_image, size: 24, color: AppTheme.textSecondary),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      record.diseaseName,
+                      style: const TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      DateFormat('d MMMM yyyy, HH:mm', 'id_ID').format(record.createdAt),
+                      style: const TextStyle(fontSize: 11.5, color: AppTheme.textSecondary),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        statusLabel,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: statusColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '${record.confidence.toStringAsFixed(1)}%',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: statusColor,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  const Icon(Icons.chevron_right, size: 20, color: AppTheme.textSecondary),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

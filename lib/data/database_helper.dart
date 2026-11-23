@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import '../models/detection_record.dart';
@@ -18,6 +19,13 @@ class DatabaseHelper {
   static const String columnSecondConfidence = 'second_confidence';
   static const String columnImagePath = 'image_path';
   static const String columnCreatedAt = 'created_at';
+
+  // Notifier reaktif: memberitahu seluruh UI ketika data berubah tanpa perlu pull-to-refresh
+  static final ValueNotifier<int> historyChangeNotifier = ValueNotifier<int>(0);
+
+  static void _notifyChange() {
+    historyChangeNotifier.value++;
+  }
 
   // Singleton instance
   DatabaseHelper._privateConstructor();
@@ -61,11 +69,13 @@ class DatabaseHelper {
   /// Menyimpan hasil deteksi baru ke riwayat
   Future<int> insertRecord(DetectionRecord record) async {
     final Database db = await database;
-    return await db.insert(
+    final int id = await db.insert(
       tableHistory,
       record.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+    _notifyChange();
+    return id;
   }
 
   /// Mengambil seluruh daftar riwayat (terbaru di atas)
@@ -119,17 +129,21 @@ class DatabaseHelper {
   /// Menghapus 1 record riwayat berdasarkan ID
   Future<int> deleteRecord(int id) async {
     final Database db = await database;
-    return await db.delete(
+    final int deleted = await db.delete(
       tableHistory,
       where: '$columnId = ?',
       whereArgs: [id],
     );
+    _notifyChange();
+    return deleted;
   }
 
   /// Menghapus seluruh riwayat
   Future<int> clearAllRecords() async {
     final Database db = await database;
-    return await db.delete(tableHistory);
+    final int count = await db.delete(tableHistory);
+    _notifyChange();
+    return count;
   }
 
   /// Menutup koneksi database

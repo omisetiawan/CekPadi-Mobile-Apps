@@ -59,7 +59,7 @@ class ImageHelper {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Terjadi kesalahan saat memproses gambar: $e'),
-            backgroundColor: AppTheme.dangerRed,
+            backgroundColor: AppTheme.statusDisease,
           ),
         );
       }

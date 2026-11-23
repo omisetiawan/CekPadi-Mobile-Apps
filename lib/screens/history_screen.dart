@@ -22,11 +22,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   void initState() {
     super.initState();
+    // Otomatis sinkronisasi data dengan database setiap kali ada penambahan/penghapusan
+    DatabaseHelper.historyChangeNotifier.addListener(_loadHistory);
     _loadHistory();
   }
 
+  @override
+  void dispose() {
+    DatabaseHelper.historyChangeNotifier.removeListener(_loadHistory);
+    super.dispose();
+  }
+
   Future<void> _loadHistory() async {
-    setState(() => _isLoading = true);
     final data = await DatabaseHelper.instance.getAllRecords();
     if (mounted) {
       setState(() {
@@ -40,17 +47,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Hapus Catatan?'),
-        content: Text('Hapus riwayat diagnosis "${record.diseaseName}" beserta fotonya?'),
+        title: const Text('Hapus Catatan Ini?'),
+        content: Text('Catatan pemeriksaan "${record.diseaseName}" beserta fotonya akan dihapus permanen.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             child: const Text('Batal'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.dangerRed),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.statusDisease,
+              foregroundColor: Colors.white,
+            ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Hapus', style: TextStyle(color: Colors.white)),
+            child: const Text('Hapus'),
           ),
         ],
       ),
@@ -61,7 +71,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         await DatabaseHelper.instance.deleteRecord(record.id!);
       }
       await ImageStorageService.deleteImage(record.imagePath);
-      _loadHistory();
+      // Listener otomatis memperbarui tampilan
     }
   }
 
@@ -71,9 +81,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Hapus Semua Riwayat?'),
+        title: const Text('Hapus Seluruh Riwayat?'),
         content: const Text(
-          'Semua catatan riwayat pemeriksaan dan seluruh foto yang tersimpan akan dihapus permanen.',
+          'Semua catatan riwayat pemeriksaan dan seluruh foto yang tersimpan akan dihapus dari memori HP.',
         ),
         actions: [
           TextButton(
@@ -81,9 +91,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
             child: const Text('Batal'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.dangerRed),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.statusDisease,
+              foregroundColor: Colors.white,
+            ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Hapus Semua', style: TextStyle(color: Colors.white)),
+            child: const Text('Hapus Semua'),
           ),
         ],
       ),
@@ -92,7 +105,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     if (confirm == true && mounted) {
       await DatabaseHelper.instance.clearAllRecords();
       await ImageStorageService.clearAllImages();
-      _loadHistory();
+      // Listener otomatis memperbarui tampilan
     }
   }
 
@@ -112,33 +125,33 @@ class _HistoryScreenState extends State<HistoryScreen> {
         actions: [
           if (_records.isNotEmpty)
             IconButton(
-              icon: const Icon(Icons.delete_sweep_outlined, color: AppTheme.dangerRed),
-              tooltip: 'Hapus Semua',
+              icon: const Icon(Icons.delete_sweep_outlined, color: AppTheme.statusDisease),
+              tooltip: 'Hapus Semua Riwayat',
               onPressed: _clearAllHistory,
             ),
         ],
       ),
       body: Column(
         children: [
-          // Kolom Pencarian Cepat
+          // Kolom Pencarian Cepat Fungsional
           if (_records.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
               child: TextField(
                 decoration: InputDecoration(
-                  hintText: 'Cari nama penyakit...',
-                  hintStyle: const TextStyle(fontSize: 13, color: AppTheme.textMuted),
-                  prefixIcon: const Icon(Icons.search, size: 20, color: AppTheme.primaryGreen),
+                  hintText: 'Cari penyakit...',
+                  hintStyle: const TextStyle(fontSize: 14, color: AppTheme.textSecondary),
+                  prefixIcon: const Icon(Icons.search, size: 20, color: AppTheme.textSecondary),
                   filled: true,
                   fillColor: Colors.white,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
+                    borderSide: const BorderSide(color: AppTheme.borderMuted),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
+                    borderSide: const BorderSide(color: AppTheme.borderMuted),
                   ),
                 ),
                 onChanged: (val) {
@@ -151,43 +164,49 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryGreen))
                 : filteredRecords.isEmpty
                     ? RefreshIndicator(
                         onRefresh: _loadHistory,
+                        color: AppTheme.primaryGreen,
                         child: ListView(
                           children: [
                             SizedBox(height: MediaQuery.of(context).size.height * 0.25),
                             Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    _filterQuery.isNotEmpty
-                                        ? Icons.search_off
-                                        : Icons.folder_open_rounded,
-                                    size: 64,
-                                    color: Colors.grey.shade400,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    _filterQuery.isNotEmpty
-                                        ? 'Penyakit "$_filterQuery" tidak ditemukan'
-                                        : 'Belum ada data pemeriksaan',
-                                    style: const TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppTheme.textDark,
+                              child: Padding(
+                                padding: const EdgeInsets.all(24),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      _filterQuery.isNotEmpty
+                                          ? Icons.search_off_rounded
+                                          : Icons.folder_open_rounded,
+                                      size: 48,
+                                      color: AppTheme.textSecondary,
                                     ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    _filterQuery.isNotEmpty
-                                        ? 'Coba gunakan kata kunci pencarian lain'
-                                        : 'Ambil foto daun padi untuk mulai mendiagnosis',
-                                    style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
-                                  ),
-                                ],
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      _filterQuery.isNotEmpty
+                                          ? 'Tidak ditemukan penyakit "$_filterQuery"'
+                                          : 'Belum ada data pemeriksaan tersimpan',
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppTheme.textPrimary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      _filterQuery.isNotEmpty
+                                          ? 'Gunakan kata kunci lain atau bersihkan pencarian.'
+                                          : 'Lakukan pemeriksaan daun padi untuk melihat riwayatnya di sini.',
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
@@ -203,132 +222,116 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           itemBuilder: (context, index) {
                             final record = filteredRecords[index];
                             final bool isHealthy = record.labelKey == 'Healthy';
-                            final Color badgeColor = record.isLowConfidence
-                                ? AppTheme.warningOrange
-                                : (isHealthy ? AppTheme.primaryGreen : AppTheme.dangerRed);
+                            final Color statusColor = record.isLowConfidence
+                                ? AppTheme.statusWarning
+                                : (isHealthy ? AppTheme.statusHealthy : AppTheme.statusDisease);
 
-                            return Dismissible(
-                              key: Key('record_${record.id}'),
-                              direction: DismissDirection.endToStart,
-                              background: Container(
-                                alignment: Alignment.centerRight,
-                                padding: const EdgeInsets.only(right: 20),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.dangerRed,
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: const Icon(Icons.delete, color: Colors.white),
-                              ),
-                              onDismissed: (_) {
-                                _deleteRecord(record);
-                              },
-                              child: Card(
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(16),
-                                  onTap: () async {
-                                    final res = await Navigator.push<bool>(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => ResultScreen(
-                                          existingRecord: record,
-                                          imagePath: record.imagePath,
+                            final String statusLabel = record.isLowConfidence
+                                ? 'Perlu Foto Ulang'
+                                : (isHealthy ? 'Kondisi Sehat' : 'Terindikasi');
+
+                            return Card(
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(14),
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => ResultScreen(
+                                        existingRecord: record,
+                                        imagePath: record.imagePath,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.all(12),
+                                  child: Row(
+                                    children: [
+                                      // Foto Hasil Crop
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(10),
+                                        child: SizedBox(
+                                          width: 64,
+                                          height: 64,
+                                          child: Image.file(
+                                            File(record.imagePath),
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (context, error, stackTrace) => Container(
+                                              color: AppTheme.primaryContainer,
+                                              child: const Icon(Icons.broken_image, color: AppTheme.textSecondary),
+                                            ),
+                                          ),
                                         ),
                                       ),
-                                    );
-                                    if (res == true && mounted) {
-                                      _loadHistory();
-                                    }
-                                  },
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(12),
-                                    child: Row(
-                                      children: [
-                                        // Foto Hasil Crop
-                                        ClipRRect(
-                                          borderRadius: BorderRadius.circular(12),
-                                          child: SizedBox(
-                                            width: 68,
-                                            height: 68,
-                                            child: Image.file(
-                                              File(record.imagePath),
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (context, error, stackTrace) => Container(
-                                                color: Colors.grey.shade200,
-                                                child: const Icon(Icons.broken_image, color: Colors.grey),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 14),
+                                      const SizedBox(width: 12),
 
-                                        // Keterangan Hasil
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                record.diseaseName,
-                                                style: const TextStyle(
-                                                  fontSize: 15,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: AppTheme.textDark,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                DateFormat('d MMMM yyyy, HH:mm', 'id_ID')
-                                                    .format(record.createdAt),
-                                                style: const TextStyle(
-                                                  fontSize: 11.5,
-                                                  color: AppTheme.textMuted,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 6),
-                                              Container(
-                                                padding: const EdgeInsets.symmetric(
-                                                    horizontal: 8, vertical: 2),
-                                                decoration: BoxDecoration(
-                                                  color: badgeColor.withValues(alpha: 0.12),
-                                                  borderRadius: BorderRadius.circular(6),
-                                                ),
-                                                child: Text(
-                                                  record.isLowConfidence
-                                                      ? 'Keyakinan Rendah'
-                                                      : (isHealthy ? 'Kondisi Sehat' : 'Terindikasi Penyakit'),
-                                                  style: TextStyle(
-                                                    fontSize: 10.5,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: badgeColor,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-
-                                        // Persentase
-                                        Column(
-                                          crossAxisAlignment: CrossAxisAlignment.end,
+                                      // Keterangan Hasil
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              '${record.confidence.toStringAsFixed(1)}%',
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
-                                                color: badgeColor,
+                                              record.diseaseName,
+                                              style: const TextStyle(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w700,
+                                                color: AppTheme.textPrimary,
                                               ),
                                             ),
-                                            const SizedBox(height: 12),
-                                            IconButton(
-                                              icon: const Icon(Icons.delete_outline, size: 20, color: Colors.grey),
-                                              onPressed: () => _deleteRecord(record),
-                                              padding: EdgeInsets.zero,
-                                              constraints: const BoxConstraints(),
+                                            const SizedBox(height: 3),
+                                            Text(
+                                              DateFormat('d MMMM yyyy, HH:mm', 'id_ID')
+                                                  .format(record.createdAt),
+                                              style: const TextStyle(
+                                                fontSize: 11.5,
+                                                color: AppTheme.textSecondary,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                  horizontal: 8, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: statusColor.withValues(alpha: 0.12),
+                                                borderRadius: BorderRadius.circular(6),
+                                              ),
+                                              child: Text(
+                                                statusLabel,
+                                                style: TextStyle(
+                                                  fontSize: 10.5,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: statusColor,
+                                                ),
+                                              ),
                                             ),
                                           ],
                                         ),
-                                      ],
-                                    ),
+                                      ),
+
+                                      // Persentase & Tombol Hapus
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        children: [
+                                          Text(
+                                            '${record.confidence.toStringAsFixed(1)}%',
+                                            style: TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w800,
+                                              color: statusColor,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 10),
+                                          IconButton(
+                                            icon: const Icon(Icons.delete_outline, size: 20, color: AppTheme.textSecondary),
+                                            onPressed: () => _deleteRecord(record),
+                                            tooltip: 'Hapus pemeriksaan',
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),

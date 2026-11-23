@@ -1,49 +1,71 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+/// Tema Aplikasi CekPadi — Fungsional, Membumi, Kontras Tinggi untuk Petani
+/// Mengikuti panduan DESIGN.md dan standar anti-slop:
+/// - 100% Native Offline Typography (tanpa panggilan jaringan google_fonts)
+/// - Kontras tinggi memenuhi standar WCAG AA/AAA (> 4.5:1) agar mudah dibaca di bawah terik matahari sawah.
 class AppTheme {
-  // Warna Utama (Nuansa Pertanian & Alam)
-  static const Color primaryGreen = Color(0xFF2E7D32); // Hijau Daun Padi Segar
-  static const Color primaryDarkGreen = Color(0xFF1B5E20); // Hijau Tua
-  static const Color primaryLightGreen = Color(0xFFE8F5E9); // Hijau Muda Lembut
-  static const Color accentAmber = Color(0xFFF9A825); // Kuning Bulir Padi
-  static const Color warningOrange = Color(0xFFE65100); // Oranye Peringatan
-  static const Color dangerRed = Color(0xFFC62828); // Merah Bahaya
-  static const Color surfaceGrey = Color(0xFFF8F9FA); // Background Lembut
-  static const Color textDark = Color(0xFF1F2937); // Teks Utama
-  static const Color textMuted = Color(0xFF6B7280); // Teks Sekunder
+  // Palet Warna Utama (Berdasarkan DESIGN.md)
+  static const Color primaryGreen = Color(0xFF1E5E3A); // Hijau Daun Padi Tua
+  static const Color primaryContainer = Color(0xFFE5F2E9); // Hijau Muda Kontainer
+  static const Color surfaceBackground = Color(0xFFF7F9F6); // Latar Putih Gading Alami
+  static const Color surfaceCard = Colors.white; // Permukaan Kartu Solid
+  static const Color borderMuted = Color(0xFFDDE3DC); // Garis Batas Kartu yang Jelas
+  static const Color textPrimary = Color(0xFF142218); // Teks Utama Arang Pekat
+  static const Color textSecondary = Color(0xFF4A5D50); // Teks Sekunder Lumut Tua
+
+  // Warna Sinyal & Status Agronomi (Bukan Hiasan)
+  static const Color accentAmber = Color(0xFFD97706); // Bulir Padi Emas
+  static const Color statusHealthy = Color(0xFF1E5E3A); // Daun Sehat
+  static const Color statusDisease = Color(0xFFB91C1C); // Terindikasi Penyakit
+  static const Color statusWarning = Color(0xFFC2410C); // Keyakinan Rendah / Perlu Foto Ulang
+
+  // Aliases untuk kompatibilitas kode
+  static const Color primaryLightGreen = primaryContainer;
+  static const Color primaryDarkGreen = primaryGreen;
+  static const Color textDark = textPrimary;
+  static const Color textMuted = textSecondary;
+  static const Color dangerRed = statusDisease;
+  static const Color warningOrange = statusWarning;
 
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
-      fontFamily: GoogleFonts.plusJakartaSans().fontFamily,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: primaryGreen,
+      scaffoldBackgroundColor: surfaceBackground,
+      colorScheme: const ColorScheme(
+        brightness: Brightness.light,
         primary: primaryGreen,
+        onPrimary: Colors.white,
+        primaryContainer: primaryContainer,
+        onPrimaryContainer: primaryGreen,
         secondary: accentAmber,
-        surface: surfaceGrey,
-        error: dangerRed,
+        onSecondary: Colors.white,
+        surface: surfaceBackground,
+        onSurface: textPrimary,
+        error: statusDisease,
+        onError: Colors.white,
       ),
-      scaffoldBackgroundColor: surfaceGrey,
-      appBarTheme: AppBarTheme(
+      appBarTheme: const AppBarTheme(
         backgroundColor: Colors.white,
-        foregroundColor: textDark,
+        foregroundColor: textPrimary,
         elevation: 0,
         scrolledUnderElevation: 1,
-        centerTitle: true,
-        titleTextStyle: GoogleFonts.plusJakartaSans(
+        centerTitle: false,
+        titleTextStyle: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w700,
-          color: textDark,
+          color: textPrimary,
+          letterSpacing: -0.2,
         ),
-        iconTheme: const IconThemeData(color: textDark),
+        iconTheme: IconThemeData(color: textPrimary),
       ),
       cardTheme: CardThemeData(
-        color: Colors.white,
+        color: surfaceCard,
         elevation: 0,
+        margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0xFFE5E7EB), width: 1),
+          borderRadius: BorderRadius.circular(14),
+          side: const BorderSide(color: borderMuted, width: 1.2),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -51,25 +73,29 @@ class AppTheme {
           backgroundColor: primaryGreen,
           foregroundColor: Colors.white,
           elevation: 0,
+          minimumSize: const Size(double.infinity, 52), // Target sentuh jempol petani
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: GoogleFonts.plusJakartaSans(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
+          textStyle: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.1,
           ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: primaryGreen,
-          side: const BorderSide(color: primaryGreen, width: 1.5),
+          foregroundColor: textPrimary,
+          backgroundColor: Colors.white,
+          side: const BorderSide(color: borderMuted, width: 1.5),
+          minimumSize: const Size(double.infinity, 50),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: GoogleFonts.plusJakartaSans(
+          textStyle: const TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,
           ),
@@ -77,20 +103,22 @@ class AppTheme {
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: Colors.white,
-        indicatorColor: primaryLightGreen,
+        elevation: 2,
+        height: 68,
+        indicatorColor: primaryContainer,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return GoogleFonts.plusJakartaSans(
+            return const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
               color: primaryGreen,
             );
           }
-          return GoogleFonts.plusJakartaSans(
+          return const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w500,
-            color: textMuted,
+            color: textSecondary,
           );
         }),
       ),

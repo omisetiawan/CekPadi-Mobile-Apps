@@ -19,23 +19,23 @@ class AboutScreen extends StatelessWidget {
               child: Column(
                 children: [
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(18),
                     child: Image.asset(
                       'assets/icon/app_icon.png',
-                      width: 84,
-                      height: 84,
+                      width: 80,
+                      height: 80,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) => Container(
-                        width: 84,
-                        height: 84,
+                        width: 80,
+                        height: 80,
                         decoration: BoxDecoration(
-                          color: AppTheme.primaryLightGreen,
-                          borderRadius: BorderRadius.circular(20),
+                          color: AppTheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(18),
                           border: Border.all(color: AppTheme.primaryGreen, width: 2),
                         ),
                         child: const Icon(
                           Icons.eco_rounded,
-                          size: 48,
+                          size: 44,
                           color: AppTheme.primaryGreen,
                         ),
                       ),
@@ -44,12 +44,19 @@ class AboutScreen extends StatelessWidget {
                   const SizedBox(height: 12),
                   const Text(
                     'CekPadi',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.textDark),
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimary,
+                    ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   const Text(
                     'Versi 1.0.0 (MVP Skripsi)',
-                    style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.textSecondary,
+                    ),
                   ),
                 ],
               ),
@@ -70,7 +77,7 @@ class AboutScreen extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
 
             // 2. Spesifikasi Model AI (On-Device)
             _buildInfoCard(
@@ -86,7 +93,7 @@ class AboutScreen extends StatelessWidget {
                 _buildRowItem('Ambang Batas', '75% Confidence Threshold'),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
 
             // 3. Batasan Sistem (PRD Bab 4)
             _buildInfoCard(
@@ -99,42 +106,48 @@ class AboutScreen extends StatelessWidget {
                 _buildBullet('100% offline-first: seluruh pemrosesan dan data riwayat tersimpan di memori lokal HP tanpa mengirim foto ke cloud/server.'),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
 
             // 4. Disclaimer
-            Card(
-              color: const Color(0xFFFFF8E1),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: const BorderSide(color: AppTheme.accentAmber, width: 1),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFFBEB), // Amber tint lembut
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppTheme.accentAmber, width: 1.2),
               ),
-              child: const Padding(
-                padding: EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.shield_outlined, color: AppTheme.warningOrange, size: 20),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Pernyataan Penyangkalan (Disclaimer)',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textDark),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Row(
+                    children: [
+                      Icon(Icons.shield_outlined, color: AppTheme.accentAmber, size: 20),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Pernyataan Penyangkalan (Disclaimer)',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: AppTheme.textPrimary,
                           ),
                         ),
-                      ],
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Aplikasi ini dirancang sebagai alat bantu pendeteksi dini dan edukasi bagi petani maupun penyuluh pertanian. Hasil diagnosis tidak menggantikan inspeksi langsung oleh ahli proteksi tanaman resmi bila terjadi wabah penyakit skala luas.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      height: 1.45,
+                      color: AppTheme.textPrimary,
                     ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Aplikasi ini dirancang sebagai alat bantu pendeteksi dini dan edukasi bagi petani maupun penyuluh pertanian. Hasil diagnosis tidak menggantikan inspeksi langsung oleh ahli proteksi tanaman resmi bila terjadi wabah penyakit skala luas.',
-                      style: TextStyle(fontSize: 11.5, height: 1.4, color: AppTheme.textDark),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -146,43 +159,62 @@ class AboutScreen extends StatelessWidget {
     required IconData icon,
     required List<Widget> children,
   }) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, size: 18, color: AppTheme.primaryGreen),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5, color: AppTheme.textDark),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceCard,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.borderMuted, width: 1.2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 18, color: AppTheme.primaryGreen),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14.5,
+                    color: AppTheme.textPrimary,
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            ...children,
-          ],
-        ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...children,
+        ],
       ),
     );
   }
 
   Widget _buildRowItem(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 11, color: AppTheme.textMuted)),
-          const SizedBox(height: 1),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppTheme.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 2),
           Text(
             value,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textDark),
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textPrimary,
+              height: 1.35,
+            ),
           ),
         ],
       ),
@@ -191,7 +223,7 @@ class AboutScreen extends StatelessWidget {
 
   Widget _buildBullet(String text) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.only(bottom: 7),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -199,7 +231,11 @@ class AboutScreen extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(fontSize: 12.5, height: 1.35, color: AppTheme.textDark),
+              style: const TextStyle(
+                fontSize: 12.5,
+                height: 1.38,
+                color: AppTheme.textPrimary,
+              ),
             ),
           ),
         ],

@@ -52,7 +52,7 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   const Text(
-                    'Versi 1.0.0 (MVP Skripsi)',
+                    'Versi 1.0.0',
                     style: TextStyle(
                       fontSize: 12,
                       color: AppTheme.textSecondary,
@@ -73,7 +73,7 @@ class AboutScreen extends StatelessWidget {
                 _buildRowItem('Institusi', 'Politeknik Negeri Indramayu'),
                 _buildRowItem(
                   'Judul Skripsi',
-                  'Klasifikasi Penyakit Daun Padi Berbasis Citra Menggunakan Transfer Learning MobileNetV2 pada Aplikasi Mobile dengan Rekomendasi Penanganannya',
+                  'Perbandingan Transfer Learning Arsitektur EfficientNet-B0 dan MobileNetV2 untuk Deteksi Penyakit Daun Padi Berbasis Citra pada Aplikasi Mobile Offline',
                 ),
               ],
             ),

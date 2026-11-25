@@ -74,10 +74,18 @@ void main() {
     });
   });
 
-  group('ClassifierService Threshold', () {
+  group('ClassifierService Threshold & Calibration', () {
     test('Ambang batas keyakinan harus 75%', () {
       expect(ClassifierService.confidenceThreshold, equals(75.0));
       expect(ClassifierService.inputSize, equals(224));
+    });
+
+    test('Kalibrasi Temperature Scaling menormalkan jumlah probabilitas menjadi 1.0', () {
+      final rawProbs = [0.70, 0.20, 0.05, 0.03, 0.02];
+      final calibrated = ClassifierService.calibrateProbabilities(rawProbs, ClassifierService.temperature);
+      expect(calibrated.length, equals(5));
+      final sum = calibrated.reduce((a, b) => a + b);
+      expect((sum - 1.0).abs() < 1e-5, isTrue);
     });
   });
 }

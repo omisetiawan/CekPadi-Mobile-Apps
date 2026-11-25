@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:image/image.dart' as img;
@@ -10,12 +11,14 @@ import '../models/disease_info.dart';
 class ClassifierResult {
   final String labelKey;
   final DiseaseInfo diseaseInfo;
-  final double confidence; // Nilai persentase (0.0 - 100.0)
-  final bool isLowConfidence; // true jika < 75.0%
+  final double confidence; // Nilai persentase (0.0 - 100.0) terkalibrasi
+  final bool isLowConfidence; // true jika < confidenceThreshold
   final String? secondLabelKey;
   final double? secondConfidence;
-  final Map<String, double> allProbabilities; // Seluruh probabilitas 5 kelas
-  final int inferenceTimeMs;
+  final Map<String, double> allProbabilities; // Seluruh probabilitas 5 kelas (terkalibrasi)
+  final Map<String, double>? rawProbabilities; // Probabilitas mentah sebelum kalibrasi
+  final int inferenceTimeMs; // Waktu inferensi TFLite murni
+  final int preprocessingTimeMs; // Waktu decode, orientasi EXIF, resize, dan tensor preparation
 
   ClassifierResult({
     required this.labelKey,
@@ -25,7 +28,9 @@ class ClassifierResult {
     this.secondLabelKey,
     this.secondConfidence,
     required this.allProbabilities,
+    this.rawProbabilities,
     required this.inferenceTimeMs,
+    required this.preprocessingTimeMs,
   });
 }
 
@@ -34,7 +39,13 @@ class ClassifierService {
   static const String _labelsAssetPath = 'assets/models/labels_multidomain.txt';
 
   static const int inputSize = 224;
-  static const double confidenceThreshold = 75.0; // 75% ambang batas sesuai PRD
+  static const double confidenceThreshold = 75.0; // 75% ambang batas sesuai validasi
+
+  /// Parameter Temperature Scaling hasil optimasi NLL pada data validasi (Eksperimen 4):
+  /// - EfficientNet-B0: T = 0.5534 (kalibrasi.json)
+  /// - MobileNetV2: T = 0.5826 (kalibrasi_mobilenetv2.json)
+  /// Nilai 1.0 berarti tanpa kalibrasi.
+  static const double temperature = 0.5534;
 
   Interpreter? _interpreter;
   List<String> _labels = [];
@@ -42,6 +53,19 @@ class ClassifierService {
 
   bool get isInitialized => _isInitialized;
   List<String> get labels => _labels;
+
+  /// Kalibrasi probabilitas menggunakan Temperature Scaling (T)
+  /// z_i = log(p_i + eps) / T; q = softmax(z)
+  static List<double> calibrateProbabilities(List<double> rawProbs, double t) {
+    if (t <= 0 || (t - 1.0).abs() < 1e-4) return List<double>.from(rawProbs);
+    const double eps = 1e-12;
+    final List<double> z = rawProbs.map((p) => math.log(p.clamp(eps, 1.0)) / t).toList();
+    final double maxZ = z.reduce(math.max);
+    final List<double> expZ = z.map((val) => math.exp(val - maxZ)).toList();
+    final double sumExp = expZ.reduce((a, b) => a + b);
+    if (sumExp <= 0) return List<double>.from(rawProbs);
+    return expZ.map((val) => val / sumExp).toList();
+  }
 
   /// Memuat model TFLite dan file label dari assets
   Future<void> initialize() async {
@@ -76,7 +100,7 @@ class ClassifierService {
       await initialize();
     }
 
-    final stopwatch = Stopwatch()..start();
+    final prepStopwatch = Stopwatch()..start();
 
     // 1. Baca byte citra dan decode menggunakan package `image`
     final imageBytes = await imageFile.readAsBytes();
@@ -86,9 +110,12 @@ class ClassifierService {
       throw Exception('Gagal memproses file gambar. Format citra tidak didukung.');
     }
 
+    // Pastikan orientasi EXIF dinormalisasi (khusus foto langsung dari kamera HP)
+    final img.Image orientedImage = img.bakeOrientation(decodedImage);
+
     // 2. Resize citra ke 224x224 piksel
     final img.Image resizedImage = img.copyResize(
-      decodedImage,
+      orientedImage,
       width: inputSize,
       height: inputSize,
       interpolation: img.Interpolation.linear,
@@ -114,25 +141,33 @@ class ClassifierService {
       ),
     );
 
+    prepStopwatch.stop();
+    final int preprocessingTime = prepStopwatch.elapsedMilliseconds;
+
     // 4. Siapkan output tensor [1, num_classes]
     final output = List.generate(
       1,
       (_) => List<double>.filled(_labels.length, 0.0),
     );
 
-    // 5. Jalankan inferensi TFLite
+    // 5. Jalankan inferensi TFLite murni (diukur terpisah dari preprocessing)
+    final inferStopwatch = Stopwatch()..start();
     _interpreter!.run(input, output);
+    inferStopwatch.stop();
+    final int inferenceTime = inferStopwatch.elapsedMilliseconds;
 
-    stopwatch.stop();
-    final int inferenceTime = stopwatch.elapsedMilliseconds;
+    // 6. Parsing hasil output softmax & terapkan Temperature Scaling
+    final rawProbabilitiesList = output[0];
+    final calibratedProbabilitiesList = calibrateProbabilities(rawProbabilitiesList, temperature);
 
-    // 6. Parsing hasil output softmax
-    final rawProbabilities = output[0];
     final Map<String, double> allProbabilities = {};
+    final Map<String, double> rawProbabilitiesMap = {};
 
     for (int i = 0; i < _labels.length; i++) {
-      final percentage = (rawProbabilities[i] * 100.0).clamp(0.0, 100.0);
-      allProbabilities[_labels[i]] = double.parse(percentage.toStringAsFixed(2));
+      final calPercentage = (calibratedProbabilitiesList[i] * 100.0).clamp(0.0, 100.0);
+      final rawPercentage = (rawProbabilitiesList[i] * 100.0).clamp(0.0, 100.0);
+      allProbabilities[_labels[i]] = double.parse(calPercentage.toStringAsFixed(2));
+      rawProbabilitiesMap[_labels[i]] = double.parse(rawPercentage.toStringAsFixed(2));
     }
 
     // Urutkan kelas berdasarkan probabilitas tertinggi
@@ -155,7 +190,9 @@ class ClassifierService {
       secondLabelKey: secondEntry?.key,
       secondConfidence: secondEntry?.value,
       allProbabilities: allProbabilities,
+      rawProbabilities: rawProbabilitiesMap,
       inferenceTimeMs: inferenceTime,
+      preprocessingTimeMs: preprocessingTime,
     );
   }
 

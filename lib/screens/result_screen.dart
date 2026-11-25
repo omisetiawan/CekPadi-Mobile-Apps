@@ -196,6 +196,7 @@ class _ResultScreenState extends State<ResultScreen> {
     final double? secondConfidence = widget.classifierResult?.secondConfidence ??
         widget.existingRecord?.secondConfidence;
     final int? inferenceTime = widget.classifierResult?.inferenceTimeMs;
+    final int? prepTime = widget.classifierResult?.preprocessingTimeMs;
 
     final Color statusColor = isLowConfidence
         ? AppTheme.statusWarning
@@ -337,7 +338,9 @@ class _ResultScreenState extends State<ResultScreen> {
                         ),
                         if (inferenceTime != null)
                           Text(
-                            'Waktu analisis: ${inferenceTime}ms',
+                            prepTime != null
+                                ? 'Inferensi: ${inferenceTime}ms (Prep: ${prepTime}ms)'
+                                : 'Waktu analisis: ${inferenceTime}ms',
                             style: const TextStyle(fontSize: 11.5, color: AppTheme.textSecondary),
                           ),
                       ],
@@ -368,7 +371,7 @@ class _ResultScreenState extends State<ResultScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
-                          'Kepastian Diagnosis:',
+                          'Tingkat Keyakinan Model:',
                           style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                         ),
                         Text(

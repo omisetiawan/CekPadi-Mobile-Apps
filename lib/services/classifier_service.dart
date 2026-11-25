@@ -42,8 +42,8 @@ class ClassifierService {
   static const double confidenceThreshold = 75.0; // 75% ambang batas sesuai validasi
 
   /// Parameter Temperature Scaling hasil optimasi NLL pada data validasi (Eksperimen 4):
-  /// - EfficientNet-B0: T = 0.5534 (kalibrasi.json)
-  /// - MobileNetV2: T = 0.5826 (kalibrasi_mobilenetv2.json)
+  /// - EfficientNet-B0 (Model Utama Terpasang): T = 0.5534 (kalibrasi.json)
+  /// - MobileNetV2 (Pembanding): T = 0.5826 (kalibrasi_mobilenetv2.json)
   /// Nilai 1.0 berarti tanpa kalibrasi.
   static const double temperature = 0.5534;
 

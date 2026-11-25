@@ -54,6 +54,6 @@ void main() {
     expect(find.text('Romi Setiawan'), findsOneWidget);
     expect(find.text('D4 Rekayasa Perangkat Lunak'), findsOneWidget);
     expect(find.text('Politeknik Negeri Indramayu'), findsOneWidget);
-    expect(find.text('MobileNetV2 (Transfer Learning)'), findsOneWidget);
+    expect(find.text('EfficientNet-B0 (Transfer Learning)'), findsOneWidget);
   });
 }
